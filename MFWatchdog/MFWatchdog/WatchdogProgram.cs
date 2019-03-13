@@ -39,6 +39,8 @@ namespace MFWatchdog
             const bool DEFAULT_LEDRESTART_INITIAL_STATE = false;
             const bool DEFAULT_LEDFEZ_INITIAL_STATE = true;
             const int DEFAULT_WATCHDOG_TIMEOUT_PERIOD = 5000;
+            const int TIME_BLINK_LED = 100;
+            const int ONE_MS_IN_TICK = 10000;
 
             Button btnStart = new Button(true, new InputPort(GHICard.Socket12.Pin3, true, Port.ResistorMode.Disabled), 250);
             Button btnRestart = new Button(true, new InputPort(GHICard.Socket14.Pin3, true, Port.ResistorMode.Disabled), 250);
@@ -46,30 +48,88 @@ namespace MFWatchdog
             OutputPort ledRestart = new OutputPort(GHICard.Socket14.Pin4, DEFAULT_LEDRESTART_INITIAL_STATE);
             OutputPort ledFez = new OutputPort(GHICard.DebugLed, DEFAULT_LEDFEZ_INITIAL_STATE);
 
-            int state = 0;
+            int state = (int)State.Wait;
+            long oldTicksFezLed = 0;
+            long oldTicksRestartLed = 0;
+            long oldTicksAlarm = 0;
+            bool isLedFezOn = false;
+            bool isLedRestartOn = false;
 
             //main loop
             while (true)
             {
+                //State Management
+                long ticks = Utility.GetMachineTime().Ticks;
+
                 switch (state)
                 {
                     case (int)State.Wait:
                         ledStart.Write(true);
+                        ledRestart.Write(false);
+                        long elapsedTicksFezLed = ticks - oldTicksFezLed;
+                        if (elapsedTicksFezLed >= TIME_BLINK_LED * ONE_MS_IN_TICK)
+                        {
+                            isLedFezOn = !isLedFezOn;
+                            oldTicksFezLed = ticks;
+                        }
+                        ledFez.Write(isLedFezOn);
+
+                        if (btnStart.isPressed())
+                        {
+                            state = (int)State.EnableWD;
+                        }
                         break;
                     case (int)State.EnableWD:
+                        ledStart.Write(false);
+                        ledRestart.Write(false);
+                        ledFez.Write(false);
                         GHIWatchdog.Enable(DEFAULT_WATCHDOG_TIMEOUT_PERIOD);
+                        state = (int)State.Count;
+                        oldTicksAlarm = ticks;
                         break;
                     case (int)State.Count:
-                        break;
-                    case (int)State.ReloadWD:
+                        ledStart.Write(false);
+                        ledRestart.Write(true);
+                        ledFez.Write(true);
+                        long elapsedTicksAlarm = ticks - oldTicksAlarm;
+                        if (elapsedTicksAlarm >= (DEFAULT_WATCHDOG_TIMEOUT_PERIOD / 2) * ONE_MS_IN_TICK)
+                        {
+                            state = (int)State.Alarm;
+                        }
+
+                        if (btnRestart.isPressed())
+                        {
+                            state = (int)State.ReloadWD;
+                        }
                         break;
                     case (int)State.Alarm:
+                        ledStart.Write(false);
+                        long elapsedTicksRestartLed = ticks - oldTicksRestartLed;
+                        if (elapsedTicksRestartLed >= TIME_BLINK_LED * ONE_MS_IN_TICK)
+                        {
+                            isLedRestartOn = !isLedRestartOn;
+                            oldTicksRestartLed = ticks;
+                        }
+                        ledRestart.Write(isLedRestartOn);
+                        ledFez.Write(true);
+
+                        if (btnRestart.isPressed())
+                        {
+                            state = (int)State.ReloadWD;
+                        }
+                        break;
+                    case (int)State.ReloadWD:
+                        ledStart.Write(false);
+                        ledRestart.Write(true);
+                        ledFez.Write(true);
+                        GHIWatchdog.ResetCounter();
+                        oldTicksAlarm = ticks;
+
+                        state = (int)State.Count;
                         break;
                     default:
                         break;
                 }
-
-
             }
         }
     }
