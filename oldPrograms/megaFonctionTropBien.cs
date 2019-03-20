@@ -4,8 +4,11 @@ public static void Initialisation()
         rs.Write(false);
         //active l'eclairage de l'ecran
         backLight.Write(true);
+        //écrit en 8 bit
         SendCmd(0x33);
+        //ecrit en 4 bit
         SendCmd(0x32);
+        //display on
         SendCmd(0x0C);
         //vide l'affichage
         SendCmd(0x01);

@@ -48,21 +48,34 @@ namespace MFInteruptTrucMachin
 
         public static void Btn_OnInterrupt(uint port, uint state, DateTime time)
         {
+            Thread.Sleep(1);
+
+            if (port == 45)
+            {
+                if (btn1.Read() && state == 0)
+                {
+                    AButtonIsPressed();
+                    ledBtn1.Write(false);
+                    ledBtn2.Write(true);
+                }
+            }
+            else if (port == 44)
+            {
+                if (btn2.Read() && state == 1)
+                {
+                    AButtonIsPressed();
+                    ledBtn1.Write(true);
+                    ledBtn2.Write(false);
+                }
+            }
+        }
+        
+        public static void AButtonIsPressed()
+        {
             interuptCounter++;
             Debug.Print(interuptCounter.ToString());
 
             ledSpider.Write(!ledSpider.Read());
-
-            if (port == 45)
-            {
-                ledBtn1.Write(false);
-                ledBtn2.Write(true);
-            }
-            else if (port == 44)
-            {
-                ledBtn1.Write(true);
-                ledBtn2.Write(false);
-            }
         }
     }
 }
