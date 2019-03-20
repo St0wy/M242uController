@@ -1,0 +1,24 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MFTestExtendedTimer", "MFTestExtendedTimer\MFTestExtendedTimer.csproj", "{197E4381-FF3E-4F95-AFA5-5D9A2A1D63E1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{197E4381-FF3E-4F95-AFA5-5D9A2A1D63E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{197E4381-FF3E-4F95-AFA5-5D9A2A1D63E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{197E4381-FF3E-4F95-AFA5-5D9A2A1D63E1}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{197E4381-FF3E-4F95-AFA5-5D9A2A1D63E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{197E4381-FF3E-4F95-AFA5-5D9A2A1D63E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{197E4381-FF3E-4F95-AFA5-5D9A2A1D63E1}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
