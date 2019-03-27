@@ -32,7 +32,24 @@ namespace MFLCDLOL
     {
         public static void Main()
         {
-            Debug.Print(Resources.GetString(Resources.StringResources.String1));
+            Thread.Sleep(40);
+            LCD lcd = new LCD();
+
+            lcd.SetCursor(0, 0);
+            lcd.RegisterSelect.Write(true);
+            lcd.SendData(0xBD);
+            lcd.SendData(0xB7);
+            lcd.SendData(0xAC);
+            lcd.SendData(0xB7);
+            lcd.RegisterSelect.Write(false);
+            lcd.SetCursor(1, 0);
+            lcd.RegisterSelect.Write(true);
+            lcd.SendData(0xCC);
+            lcd.SendData(0xBF);
+            lcd.SendData(0xB9);
+            lcd.SendData(0xBF);
+            lcd.RegisterSelect.Write(false);
+            Thread.Sleep(Timeout.Infinite);
         }
     }
 }

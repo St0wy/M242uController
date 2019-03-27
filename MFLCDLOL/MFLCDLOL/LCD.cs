@@ -49,42 +49,40 @@ namespace MFLCDLOL
         private OutputPort d4;
 
         //Properties
-
+        public OutputPort RegisterSelect
+        {
+            get { return registerSelect; }
+            set { registerSelect = value; }
+        }
+        public OutputPort BackLight
+        {
+            get { return backLight; }
+            set { backLight = value; }
+        }
 
         //Constructors
         public LCD(OutputPort rs, OutputPort e, OutputPort bl, OutputPort d7, OutputPort d6, OutputPort d5, OutputPort d4)
         {
             this.registerSelect = rs;
             this.enable = e;
-            this.backLight = bl;
+            this.BackLight = bl;
             this.d7 = d7;
             this.d6 = d6;
             this.d5 = d5;
             this.d4 = d4;
 
-            //indique l'envois d'une commande
-            this.registerSelect.Write(false);
-            //active l'eclairage de l'ecran
-            this.backLight.Write(true);
-            //ecrit en 8 bit
-            SendData(COMMAND_WRITE_IN_8_BIT);
-            //ecrit en 4 bit
-            SendData(COMMAND_WRITE_IN_4_BIT);
-            //display on
-            SendData(COMMAND_DISPLAY_ON);
-            //vide l'affichage
-            SendData(COMMAND_EMPTY_DISPLAY);
+            InitLCD();
         }
 
         public LCD()
             : this(
-                new OutputPort(FEZSpiderII.Socket8.Pin4, false),
-                new OutputPort(FEZSpiderII.Socket8.Pin3, true),
-                new OutputPort(FEZSpiderII.Socket8.Pin8, false),
-                new OutputPort(FEZSpiderII.Socket8.Pin6, false),
-                new OutputPort(FEZSpiderII.Socket8.Pin9, false),
-                new OutputPort(FEZSpiderII.Socket8.Pin7, false),
-                new OutputPort(FEZSpiderII.Socket8.Pin5, false))
+                new OutputPort(FEZSpiderII.Socket5.Pin4, false),
+                new OutputPort(FEZSpiderII.Socket5.Pin3, true),
+                new OutputPort(FEZSpiderII.Socket5.Pin8, false),
+                new OutputPort(FEZSpiderII.Socket5.Pin6, false),
+                new OutputPort(FEZSpiderII.Socket5.Pin9, false),
+                new OutputPort(FEZSpiderII.Socket5.Pin7, false),
+                new OutputPort(FEZSpiderII.Socket5.Pin5, false))
         {
 
         }
@@ -92,7 +90,6 @@ namespace MFLCDLOL
         //Methods
         public void SetCursor(int line, int column)
         {
-            
             int adress = 0;
             if (line == 0)
             {
@@ -106,24 +103,32 @@ namespace MFLCDLOL
             SendData((byte)(COMMAND_SET_CURSOR + adress));
         }
 
-        public void Write()
-
-        private void WriteChar(char charToWrite)
+        public void Write(string text)
         {
-            //Indicate the writing of a character
-            registerSelect.Write(true);
-            SendData((byte)charToWrite);
-            registerSelect.Write(false);
+            RegisterSelect.Write(true);
+            foreach (char c in text)
+            {
+                SendData((byte)c);
+            }
+            RegisterSelect.Write(false);
         }
 
-        private void SendData(byte value)
+        public void WriteChar(char charToWrite)
         {
-            byte strongBytes = (byte)((value & 0xF0) << 4);
-            byte weakBytes = (byte)(value & 0x0F);
+            //Indicate the writing of a character
+            RegisterSelect.Write(true);
+            SendData((byte)charToWrite);
+            RegisterSelect.Write(false);
+        }
 
-            Send4Bits(strongBytes);
+        public void SendData(byte value)
+        {
+            byte strongBits = (byte)((value & 0xF0) >> 4);
+            byte weakBits = (byte)(value & 0x0F);
+
+            Send4Bits(strongBits);
             ValidateEnable();
-            Send4Bits(weakBytes);
+            Send4Bits(weakBits);
             ValidateEnable();
         }
 
@@ -140,6 +145,22 @@ namespace MFLCDLOL
             enable.Write(true);
             enable.Write(false);
             Thread.Sleep(1);
+        }
+
+        private void InitLCD()
+        {
+            //indique l'envois d'une commande
+            this.RegisterSelect.Write(false);
+            //active l'eclairage de l'ecran
+            this.BackLight.Write(true);
+            //ecrit en 8 bit
+            SendData(COMMAND_WRITE_IN_8_BIT);
+            //ecrit en 4 bit
+            SendData(COMMAND_WRITE_IN_4_BIT);
+            //display on
+            SendData(COMMAND_DISPLAY_ON);
+            //vide l'affichage
+            SendData(COMMAND_EMPTY_DISPLAY);
         }
     }
 }
