@@ -27,6 +27,7 @@ using Microsoft.SPOT;
 // A ajouter
 using Microsoft.SPOT.Hardware;              // Pour OutputPort
 using GHI.Pins;					            // Pour GHI.Pins
+using GHI.Processor;                        // Pour GHI.Processor
 using System.Threading;                     // Pour Thread.Sleep(1000)
 using GHICard = GHI.Pins.FEZSpiderII;       // Défini la carte principale utilisée
 using GHIRTC = GHI.Processor.RealTimeClock; // Pour utiliser le RTC
@@ -36,9 +37,38 @@ namespace MFRegMemRTC_01
 {
     public class RegMemRTC_01
     {
+        //Constants
+        private const uint MEMRTC_0 = 0xE0084000;
+        private const int TIMER_COUNTER_DUE_TIME = 0;
+        private const int TIMER_COUNTER_PERIOD = 1000;
+
+        //Vars
+        static private Register register0 = new Register(MEMRTC_0);
+        static private LCD lcd = new LCD();
+        static private Timer timerCounter = new Timer(new TimerCallback(WriteCounter), null, TIMER_COUNTER_DUE_TIME, TIMER_COUNTER_PERIOD);
+        static private uint counter = 0;
+
         public static void Main()
         {
-            Debug.Print(Resources.GetString(Resources.StringResources.String1));
+            Thread.Sleep(40);   //Time for the LCD to boot
+            Utility.SetLocalTime(GHIRTC.GetDateTime());
+            counter = register0.Value;
+
+            //Main loop
+            while (true)
+            {
+                counter++;
+                lcd.SetCursor(1, 0);
+                lcd.Write(counter.ToString());
+                Thread.Sleep(100);
+            }
+        }
+
+        static private void WriteCounter(object obj)
+        {
+            register0.Value = counter;
+            lcd.SetCursor(0, 0);
+            lcd.Write(register0.Value.ToString());
         }
     }
 }
