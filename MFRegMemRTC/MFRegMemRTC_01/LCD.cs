@@ -26,6 +26,8 @@ namespace MFRegMemRTC_01
         const int ADRESSE_START_SECOND_LINE = 0x40;
 
         //Fields
+        private static object myLock;
+
         private OutputPort registerSelect;
         private OutputPort enable;
         private OutputPort backLight;
@@ -50,6 +52,8 @@ namespace MFRegMemRTC_01
         //Constructors
         public LCD(OutputPort rs, OutputPort e, OutputPort bl, OutputPort d7, OutputPort d6, OutputPort d5, OutputPort d4)
         {
+            myLock = new object();
+
             this.registerSelect = rs;
             this.enable = e;
             this.BackLight = bl;
@@ -88,6 +92,7 @@ namespace MFRegMemRTC_01
             }
 
             SendData((byte)(COMMAND_SET_CURSOR + adress));
+
         }
 
         public void Write(string text)
@@ -98,14 +103,15 @@ namespace MFRegMemRTC_01
                 SendData((byte)c);
             }
             RegisterSelect.Write(false);
+
         }
 
         public void WriteChar(char charToWrite)
         {
-            //Indicate the writing of a character
-            RegisterSelect.Write(true);
+            RegisterSelect.Write(true); //Indicate the writing of a character
             SendData((byte)charToWrite);
             RegisterSelect.Write(false);
+
         }
 
         public void SendData(byte value)

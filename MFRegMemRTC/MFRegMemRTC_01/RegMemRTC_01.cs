@@ -38,28 +38,31 @@ namespace MFRegMemRTC_01
     public class RegMemRTC_01
     {
         //Constants
-        private const uint MEMRTC_0 = 0xE0084000;
-        private const int TIMER_COUNTER_DUE_TIME = 0;
+        private const uint MEMRTC_0 = 0X40024044;
+        private const int TIMER_COUNTER_DUE_TIME = 40;
         private const int TIMER_COUNTER_PERIOD = 1000;
 
         //Vars
         static private Register register0 = new Register(MEMRTC_0);
         static private LCD lcd = new LCD();
         static private Timer timerCounter = new Timer(new TimerCallback(WriteCounter), null, TIMER_COUNTER_DUE_TIME, TIMER_COUNTER_PERIOD);
-        static private uint counter = 0;
+        static private uint counter = register0.Value;
+
+        static private object myLock = new object();
 
         public static void Main()
         {
             Thread.Sleep(40);   //Time for the LCD to boot
-            Utility.SetLocalTime(GHIRTC.GetDateTime());
-            counter = register0.Value;
 
             //Main loop
             while (true)
             {
-                counter++;
-                lcd.SetCursor(1, 0);
-                lcd.Write(counter.ToString());
+                counter += 1;
+                lock (myLock)
+                {
+                    lcd.SetCursor(1, 0);
+                    lcd.Write(counter.ToString());
+                }
                 Thread.Sleep(100);
             }
         }
@@ -67,8 +70,11 @@ namespace MFRegMemRTC_01
         static private void WriteCounter(object obj)
         {
             register0.Value = counter;
-            lcd.SetCursor(0, 0);
-            lcd.Write(register0.Value.ToString());
+            lock (myLock)
+            {
+                lcd.SetCursor(0, 0);
+                lcd.Write(register0.Value.ToString( ));
+            }
         }
     }
 }
