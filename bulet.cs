@@ -1,7 +1,7 @@
-/* Programme  Test
- * Hbr Fabian 23.01.2019 Version 1.0
+/* Programme:  [NomProgramme]
+ * Hbr Fabian jj.mm.2019 Version 1.0
  * Description
- * Champ de test pour Spider 2
+ * [Description]
  */
 
 /* Description matériel et librairies:
@@ -21,7 +21,7 @@
 using System;
 using Microsoft.SPOT;
 // A ajouter
-using Microsoft.SPOT.Hardware;      // Pour OutputPort
-using GHI.Pins;					    // Pour GHI.Pins
-using System.Threading;             // Pour Thread.Sleep(1000)
-using GHICard = GHI.Pins.FEZSpiderII; // Défini la carte principale utilisée
+using Microsoft.SPOT.Hardware;         // Pour OutputPort
+using GHI.Pins;					       // Pour GHI.Pins
+using System.Threading;                // Pour Thread.Sleep(1000)
+using GHICard = GHI.Pins.FEZSpiderII;  // Défini la carte principale utilisée
