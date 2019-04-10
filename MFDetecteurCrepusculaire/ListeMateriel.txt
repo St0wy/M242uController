@@ -1,0 +1,4 @@
+1 capteur de lumière
+1 actionneur: Lampe (led)
+1 capteur: 2 boutons: man-auto, on-off
+1 actionneur: Ecran LCD ou led

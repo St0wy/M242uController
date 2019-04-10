@@ -57,9 +57,13 @@ namespace LEDRegSpider
             {
                 masque = (uint)1 << x;
                 if ((ValExa & masque) > 0)
+                {
                     stringValBin += "1";
+                }
                 else
+                {
                     stringValBin += "0";
+                }
                 if (y++ == 8 && x != 0) // Met une séparation tout les 8 caractères
                 {
                     stringValBin += "'";
@@ -74,13 +78,13 @@ namespace LEDRegSpider
         // Déclaration des variables globales
         // Déclaration des ports du module LedStrip sur le connecteur 14 
         // Evite de configurerles ports directement depuis les registres GPIO
-        static OutputPort LEDStrip1 = new OutputPort(FEZSpiderII.Socket14.Pin3, true); // Port2.12
+        static OutputPort LEDStrip1 = new OutputPort(FEZSpiderII.Socket14.Pin3, false); // Port2.12
         static OutputPort LEDStrip2 = new OutputPort(FEZSpiderII.Socket14.Pin4, false);// Port2.06
-        static OutputPort LEDStrip3 = new OutputPort(FEZSpiderII.Socket14.Pin5, true); // Port2.07
+        static OutputPort LEDStrip3 = new OutputPort(FEZSpiderII.Socket14.Pin5, false); // Port2.07
         static OutputPort LEDStrip4 = new OutputPort(FEZSpiderII.Socket14.Pin6, false);// Port2.08
-        static OutputPort LEDStrip5 = new OutputPort(FEZSpiderII.Socket14.Pin7, true); // Port2.09
+        static OutputPort LEDStrip5 = new OutputPort(FEZSpiderII.Socket14.Pin7, false); // Port2.09
         static OutputPort LEDStrip6 = new OutputPort(FEZSpiderII.Socket14.Pin8, false);// Port2.03
-        static OutputPort LEDStrip7 = new OutputPort(FEZSpiderII.Socket14.Pin9, true); // Port2.05
+        static OutputPort LEDStrip7 = new OutputPort(FEZSpiderII.Socket14.Pin9, false); // Port2.05
 
         //-------------------------------------------------------------------------
 
@@ -89,48 +93,57 @@ namespace LEDRegSpider
             Debug.Print(Resources.GetString(Resources.StringResources.String1));
 
             // Configure l'Adresse du registre de base du post 2 (DIR2)de la carte Spider 1
-            const uint RegAdrPort2 = xxx;
+            const uint REG_ADR_PORT_2 = 0x20098040;
 
             // Adresses des registres de contrôle du port 2
-            Register DIR2 = new Register(yyy); // Détermine la direction de chaque broche du port: Entrée=0 Sortie=1
-            Register MASK2 = new Register(yyy); // Masque, les bits à 1 sont masqués
-            Register PIN2 = new Register(yyy);	// Lecture/écriture du port au travers de MASK2
-            Register SET2 = new Register(yyy);	// Met les bits du port, défini par le reg. SET, à 1 si non masqués par MASK2 	
-            Register CLR2 = new Register(yyy);	// Met les bits du port, défini par le reg. CLR, à 0 si non masqués par MASK2
+            Register dir2 = new Register(REG_ADR_PORT_2); // Détermine la direction de chaque broche du port: Entrée=0 Sortie=1
+            Register mask2 = new Register(REG_ADR_PORT_2 + 0x010); // Masque, les bits à 1 sont masqués
+            Register pin2 = new Register(REG_ADR_PORT_2 + 0x014);	// Lecture/écriture du port au travers de MASK2
+            Register set2 = new Register(REG_ADR_PORT_2 + 0x018);	// Met les bits du port, défini par le reg. SET, à 1 si non masqués par MASK2 	
+            Register clr2 = new Register(REG_ADR_PORT_2 + 0x01C);	// Met les bits du port, défini par le reg. CLR, à 0 si non masqués par MASK2
 
             // Affiche le contenu des registres du port 2
-            Debug.Print("DIR2  = " + DIR2.ToString() + "\t" + ExToBinToString(DIR2.Value));
-            Debug.Print("PIN2  = " + PIN2.ToString() + "\t" + ExToBinToString(PIN2.Value));
-            Debug.Print("SET2  = " + SET2.ToString() + "\t" + ExToBinToString(SET2.Value));
-            Debug.Print("CLR2  = " + CLR2.ToString() + "\t" + ExToBinToString(CLR2.Value));
-            Debug.Print("MASK2 = " + MASK2.ToString() + "\t" + ExToBinToString(MASK2.Value));
+            Debug.Print("DIR2  = " + dir2.ToString() + "\t" + ExToBinToString(dir2.Value));
+            Debug.Print("PIN2  = " + pin2.ToString() + "\t" + ExToBinToString(pin2.Value));
+            Debug.Print("SET2  = " + set2.ToString() + "\t" + ExToBinToString(set2.Value));
+            Debug.Print("CLR2  = " + clr2.ToString() + "\t" + ExToBinToString(clr2.Value));
+            Debug.Print("MASK2 = " + mask2.ToString() + "\t" + ExToBinToString(mask2.Value));
 
             // Emplacement du bit du port 2 correspondant à chaque LED du module LEDStrip
             // Pour configurer et manpuler les registres Mask, Set et Cls  du port 2
-            const uint BITLEDStrip1 = (uint)(1 << 12); // Port2.12
-            const uint BITLEDStrip2 = (uint)(1 << 6);  // Port2.06
-            const uint BITLEDStrip3 = (uint)(1 << 7);  // Port2.07
-            const uint BITLEDStrip4 = (uint)(1 << 8);  // Port2.08
-            const uint BITLEDStrip5 = (uint)(1 << 9);  // Port2.09
-            const uint BITLEDStrip6 = (uint)(1 << 3);  // Port2.03
-            const uint BITLEDStrip7 = (uint)(1 << 5);  // Port2.05
+            const uint BIT_LED_STRIP_1 = (uint)(1 << 12); // Port2.12
+            const uint BIT_LED_STRIP_2 = (uint)(1 << 6);  // Port2.06
+            const uint BIT_LED_STRIP_3 = (uint)(1 << 7);  // Port2.07
+            const uint BIT_LED_STRIP_4 = (uint)(1 << 8);  // Port2.08
+            const uint BIT_LED_STRIP_5 = (uint)(1 << 9);  // Port2.09
+            const uint BIT_LED_STRIP_6 = (uint)(1 << 3);  // Port2.03
+            const uint BIT_LED_STRIP_7 = (uint)(1 << 5);  // Port2.05
 
             // Crée un masque de toutes les IO du port 2 à l'exception des sorties du module LEDStrip 
-            const uint MaskP2LedStrip = ~(BITLEDStrip1 + BITLEDStrip2 + BITLEDStrip3 + BITLEDStrip4 +
-                                                                        BITLEDStrip5 + BITLEDStrip6 + BITLEDStrip7);
+            const uint MASK_P2_LED_STRIP = ~(BIT_LED_STRIP_1 + BIT_LED_STRIP_2 + BIT_LED_STRIP_3 + BIT_LED_STRIP_4 + BIT_LED_STRIP_5 + BIT_LED_STRIP_6 + BIT_LED_STRIP_7);
 
             // Applique le masque 
-            MASK2.Value = MaskP2LedStrip;
-            Debug.Print("MLED  = \t\t\t0x" + MaskP2LedStrip.ToString("X") + "\t" + ExToBinToString(MaskP2LedStrip));
+            mask2.Value = MASK_P2_LED_STRIP;
+            Debug.Print("MLED  = \t\t\t0x" + MASK_P2_LED_STRIP.ToString("X") + "\t" + ExToBinToString(MASK_P2_LED_STRIP));
 
+            const int DELAY = 75;
 
             while (true)
             {
-
-                // Votre code ...
-
+                set2.SetBits(BIT_LED_STRIP_4);
+                Thread.Sleep(DELAY);
+                set2.SetBits(BIT_LED_STRIP_3 + BIT_LED_STRIP_5);
+                Thread.Sleep(DELAY);
+                set2.SetBits(BIT_LED_STRIP_2 + BIT_LED_STRIP_6);
+                Thread.Sleep(DELAY);
+                set2.SetBits(BIT_LED_STRIP_1 + BIT_LED_STRIP_7);
+                Thread.Sleep(DELAY);
+                clr2.SetBits(BIT_LED_STRIP_1 + BIT_LED_STRIP_7);
+                Thread.Sleep(DELAY);
+                clr2.SetBits(BIT_LED_STRIP_2 + BIT_LED_STRIP_6);
+                Thread.Sleep(DELAY);
+                clr2.SetBits(BIT_LED_STRIP_3 + BIT_LED_STRIP_5);
             }
-
         }
     }
 }
