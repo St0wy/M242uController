@@ -30,9 +30,65 @@ namespace MFDetecteurCrepusculaire
 {
     public class DetecteurCrepusculaire
     {
+        const int TRESHOLD_HIGH = 3000;
+        const int TRESHOLD_LOW = 2500;
+        const int LIGHT_SENSOR_SCALE = 4095;
+
+        enum Mode { Auto, Manual };
+        static LCD lcd = new LCD();
+        static Mode mode = Mode.Auto;
+        static Button btnMode = new Button(new InputPort(GHICard.Socket12.Pin3, true, Port.ResistorMode.Disabled));
+        static Button btnLamp = new Button(new InputPort(GHICard.Socket14.Pin3, true, Port.ResistorMode.Disabled));
+        static OutputPort ledLamp = new OutputPort(GHICard.DebugLed, false);
+        static AnalogInput lightSensor = new AnalogInput(GHICard.Socket10.AnalogInput3);
+        static double lightSensorValue = 0;
+
         public static void Main()
         {
-            
+            lightSensor.Scale = LIGHT_SENSOR_SCALE;
+            Debug.Print(mode.ToString());
+
+            //Main loop
+            while (true)
+            {
+                lightSensorValue = lightSensor.Read();
+                //Debug.Print(lightSensorValue.ToString());
+
+                switch (mode)
+                {
+                    case Mode.Auto:
+                        if (lightSensorValue > TRESHOLD_HIGH)
+                        {
+                            ledLamp.Write(false);
+                        }
+                        else if (lightSensorValue < TRESHOLD_LOW)
+                        {
+                            ledLamp.Write(true);
+                        }
+
+                        if (btnMode.isPressed())
+                        {
+                            Debug.Print("MODE MANUAL");
+                            mode = Mode.Manual;
+                        }
+                        break;
+                    case Mode.Manual:
+                        if (btnLamp.isPressed())
+                        {
+                            Debug.Print("BTNLAMP IN MODE AUTO");
+                            ledLamp.Write(!ledLamp.Read());
+                        }
+
+                        if (btnMode.isPressed())
+                        {
+                            Debug.Print("MODE AUTO");
+                            mode = Mode.Auto;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
     }
 }
