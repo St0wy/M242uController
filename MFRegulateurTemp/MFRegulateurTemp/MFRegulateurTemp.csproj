@@ -30,6 +30,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Button.cs" />
+    <Compile Include="LCD.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RegulateurTemp.cs" />
     <Compile Include="Resources.Designer.cs">

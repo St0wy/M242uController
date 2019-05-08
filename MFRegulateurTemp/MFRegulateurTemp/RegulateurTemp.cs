@@ -33,24 +33,30 @@ namespace MFRegulateurTemp
         const int VOLTAGE_0_DEGREE = 500; //in mV
         const int TEMPERATURE_COEFFICIENT = 10; //in mV
         const int HIGHEST_VOLTAGE = 330;
-        const int TIMER_LENGHT = 20000;
-        const int LOOP_LENGHT = 20;
-        const int DEFAULT_LIMIT_TEMPERATURE = 20;
+        const int DEFAULT_LIMIT_TEMPERATURE = 80;
         const int DEFAULT_HYSTERESIS = 10;
+        const int MAX_HYSTERESIS = 10;
+        const int MIN_HYSTERESIS = 0;
+        const long TIME_ONE_MS_IN_TICKS = 10000;
+        const long TIMER_LENGHT = 20000;
 
         enum State { SettingsOff, SettingsTemperature, SettingsHysteresis, IncrementTemperature, DecrementTemperature, IncrementHysteresis, DecrementHysteresis };
 
         static Button btnSetting = new Button(new InputPort(GHICard.Socket9.Pin3, true, Port.ResistorMode.Disabled));
         static Button btnRemove = new Button(new InputPort(GHICard.Socket12.Pin3, true, Port.ResistorMode.Disabled));
         static Button btnAdd = new Button(new InputPort(GHICard.Socket14.Pin3, true, Port.ResistorMode.Disabled));
-
-        static State state = State.SettingsOff;
-
+        static LCD lcd = new LCD();
         static AnalogInput heatSensor = new AnalogInput(GHICard.Socket10.AnalogInput3);
+        static OutputPort resistor = new OutputPort(GHICard.Socket11.Pin7, false);
+        static OutputPort fan = new OutputPort(GHICard.Socket11.Pin9, false);
+        static State state = State.SettingsOff;
         static double temperature = 0;
-        static int timer = 0;
+        static long checkTime = 0;
+        static long elapsedTime = 0;
         static int limitTemperature = DEFAULT_LIMIT_TEMPERATURE;
         static int hysteresis = DEFAULT_HYSTERESIS;
+        static bool isResistorOn = false;
+        static bool isFanOn = false;
 
         public static void Main()
         {
@@ -59,24 +65,27 @@ namespace MFRegulateurTemp
 
             while (true)
             {
+                //Gets the temperature
+                long ticks = Utility.GetMachineTime().Ticks;
                 int heatSensorValue = heatSensor.ReadRaw();
                 oldoldtemp = oldtemp;
                 oldtemp = temperature;
                 temperature = (heatSensorValue * HIGHEST_VOLTAGE) / System.Math.Pow(2, GHICard.SupportedAnalogInputPrecision) - (VOLTAGE_0_DEGREE / TEMPERATURE_COEFFICIENT);
                 temperature = moyDouble(new double[] { oldoldtemp, oldtemp, temperature });
 
+                //STATE MANAGEMENT
                 switch (state)
                 {
                     case State.SettingsOff:
                         if (btnSetting.isPressed())
                         {
-                            timer = 0;
-                            state = State.IncrementTemperature;
+                            checkTime = ticks;
+                            state = State.SettingsTemperature;
                         }
                         break;
                     case State.SettingsTemperature:
-                        timer += LOOP_LENGHT;
-
+                        elapsedTime = ticks - checkTime;
+                        
                         if (btnAdd.isPressed())
                         {
                             state = State.IncrementTemperature;
@@ -85,18 +94,18 @@ namespace MFRegulateurTemp
                         {
                             state = State.DecrementTemperature;
                         }
-                        if (timer >= TIMER_LENGHT)
+                        if (elapsedTime >= TIMER_LENGHT * TIME_ONE_MS_IN_TICKS)
                         {
                             state = State.SettingsOff;
                         }
                         if (btnSetting.isPressed())
                         {
-                            timer = 0;
+                            checkTime = ticks;
                             state = State.SettingsHysteresis;
                         }
                         break;
                     case State.SettingsHysteresis:
-                        timer += LOOP_LENGHT;
+                        elapsedTime = ticks - checkTime;
 
                         if (btnAdd.isPressed())
                         {
@@ -106,7 +115,7 @@ namespace MFRegulateurTemp
                         {
                             state = State.DecrementHysteresis;
                         }
-                        if (btnSetting.isPressed() || timer >= TIMER_LENGHT)
+                        if (btnSetting.isPressed() || elapsedTime >= TIMER_LENGHT * TIME_ONE_MS_IN_TICKS)
                         {
                             state = State.SettingsOff;
                         }
@@ -114,30 +123,78 @@ namespace MFRegulateurTemp
                     case State.IncrementTemperature:
                         limitTemperature++;
 
+                        checkTime = ticks;
                         state = State.SettingsTemperature;
                         break;
                     case State.DecrementTemperature:
                         limitTemperature--;
 
+                        checkTime = ticks;
                         state = State.SettingsTemperature;
                         break;
                     case State.IncrementHysteresis:
-                        hysteresis++;
+                        if (hysteresis < MAX_HYSTERESIS)
+                        {
+                            hysteresis++;
+                        }
 
+                        checkTime = ticks;
                         state = State.SettingsHysteresis;
                         break;
                     case State.DecrementHysteresis:
-                        hysteresis--;
+                        if (hysteresis > MIN_HYSTERESIS)
+                        {
+                            hysteresis--;
+                        }
 
+                        checkTime = ticks;
                         state = State.SettingsHysteresis;
                         break;
                     default:
                         break;
                 }
 
-                Debug.Print(temperature.ToString());
+                
+                //HEAT MANAGEMENT
+                if (temperature <= limitTemperature - (hysteresis / 2))
+                {
+                    isResistorOn = true;
+                    isFanOn = false;
+                }
 
-                Thread.Sleep(LOOP_LENGHT);
+                if (temperature >= limitTemperature + (hysteresis / 2))
+                {
+                    isFanOn = true;
+                    isResistorOn = false;
+                }
+
+                fan.Write(isFanOn);
+                resistor.Write(isResistorOn);
+
+                //OUTPUT MANAGEMENT
+                lcd.SetCursor(0, 0);
+                lcd.Write(temperature.ToString("F2"));
+                lcd.SetCursor(1, 0);
+                string settingsText = "";
+                switch (state)
+                {
+                    case State.SettingsOff:
+                        settingsText = "Off        ";
+                        break;
+                    case State.SettingsTemperature:
+                        settingsText = "Temperature";
+                        break;
+                    case State.SettingsHysteresis:
+                        settingsText = "Hysteresis ";
+                        break;
+                }
+                lcd.Write(settingsText);
+                lcd.SetCursor(0, 7);
+                lcd.Write(hysteresis.ToString("D2"));
+                lcd.SetCursor(0, 10);
+                lcd.Write(limitTemperature.ToString("D2"));
+
+                Debug.Print(temperature.ToString("F2") + ";" + (limitTemperature + hysteresis / 2).ToString("D2") + ";" + (limitTemperature - hysteresis / 2).ToString("D2") + ";" + limitTemperature.ToString("D2") + ";" + isResistorOn.ToString());
             }
         }
 
