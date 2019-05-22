@@ -38,10 +38,12 @@ namespace MFRegulateurTemp
         const int PRINT_VALUES_PERIOD = 100;
         const int DEFAULT_RESISTOR_FREQUENCY = 1000;
         const double DEFAULT_RESISTOR_DUTY_CYCLE = 0.50;
-        const double DEFAULT_GAIN = 0.2;
+        const double DEFAULT_GAINP = 0.2;
+        const double DEFAULT_GAINI = 0.001;
+        const double DEFAULT_GAIND = 0.2;
         const double MAX_GAIN = 1;
         const double MIN_GAIN = 0.001;
-        const double GAIN_STEP = 0.001;
+        const double GAIN_STEP = 0.01;
         const long TIME_ONE_MS_IN_TICKS = 10000;
         const long TIMER_LENGHT = 20000;
         const string GAIN_FORMAT = "D3";
@@ -61,11 +63,19 @@ namespace MFRegulateurTemp
         static PWM resistor = new PWM(GHICard.Socket11.Pwm7, DEFAULT_RESISTOR_FREQUENCY, DEFAULT_RESISTOR_DUTY_CYCLE, false);
         static State state = State.SettingsOff;
         static int requestedTemperature = DEFAULT_REQUESTED_TEMPERATURE;
-        static double gain = DEFAULT_GAIN;
+        static double gainP = DEFAULT_GAINP;
+        static double gainI = DEFAULT_GAINI;
+        static double gainD = DEFAULT_GAIND;
         static double temperature = 0;
         static long checkTime = 0;
         static long elapsedTime = 0;
+        static double errorSum = 0;
+        static double error = 0;
+        static double oldError = 0;
         static double resistorDutyCycle = 0;
+        static double resistorDutyCycleP = 0;
+        static double resistorDutyCycleI = 0;
+        static double resistorDutyCycleD = 0;
         #endregion
 
         public static void Main()
@@ -84,8 +94,9 @@ namespace MFRegulateurTemp
                 oldoldtemp = oldtemp;
                 oldtemp = temperature;
                 temperature = (heatSensorValue * HIGHEST_VOLTAGE) / System.Math.Pow(2, GHICard.SupportedAnalogInputPrecision) - (VOLTAGE_0_DEGREE / TEMPERATURE_COEFFICIENT);
-                temperature = moyDouble(new double[] { oldoldtemp, oldtemp, temperature });
-                double error = requestedTemperature - temperature;
+                temperature = AvgDouble(new double[] { oldoldtemp, oldtemp, temperature });
+                oldError = error;
+                error = requestedTemperature - temperature;
 
                 #region STATE MANAGEMENT
                 switch (state)
@@ -147,18 +158,18 @@ namespace MFRegulateurTemp
                         state = State.SettingsTemperature;
                         break;
                     case State.IncrementGain:
-                        if (gain < MAX_GAIN)
+                        if (gainI < MAX_GAIN)
                         {
-                            gain += GAIN_STEP;
+                            gainI += GAIN_STEP;
                         }
 
                         checkTime = ticks;
                         state = State.SettingsGain;
                         break;
                     case State.DecrementGain:
-                        if (gain > MIN_GAIN)
+                        if (gainI > MIN_GAIN)
                         {
-                            gain -= GAIN_STEP;
+                            gainI -= GAIN_STEP;
                         }
 
                         checkTime = ticks;
@@ -170,15 +181,13 @@ namespace MFRegulateurTemp
                 #endregion
 
                 #region HEAT MANAGEMENT
-                resistorDutyCycle = gain * error;
-                if (resistorDutyCycle > 1)
-                {
-                    resistorDutyCycle = 1;
-                }
-                else if (resistorDutyCycle < 0)
-                {
-                    resistorDutyCycle = 0;
-                }
+                errorSum += error;
+
+                resistorDutyCycleP = gainP * error;
+                resistorDutyCycleI = gainI * errorSum;
+                resistorDutyCycleD = gainD * (error - oldError);
+                resistorDutyCycle = AvgDouble(new double[] { resistorDutyCycleP, resistorDutyCycleI, resistorDutyCycleD });
+                resistorDutyCycle = LimitToPercentage(resistorDutyCycle);
 
                 resistor.DutyCycle = resistorDutyCycle;
                 #endregion
@@ -202,14 +211,14 @@ namespace MFRegulateurTemp
                 }
                 lcd.Write(settingsText);
                 lcd.SetCursor(0, 7);
-                lcd.Write(gain.ToString(GAIN_FORMAT));
+                lcd.Write(gainI.ToString(GAIN_FORMAT));
                 lcd.SetCursor(1, 12);
                 lcd.Write(requestedTemperature.ToString(TEMPERATURE_FORMAT));
                 #endregion
             }
         }
 
-        public static double moyDouble(double[] tab)
+        private static double AvgDouble(double[] tab)
         {
             double moy = 0;
             foreach (double nbr in tab)
@@ -221,9 +230,23 @@ namespace MFRegulateurTemp
             return moy;
         }
 
+        private static double LimitToPercentage(double nbr)
+        {
+            if (nbr > 1)
+            {
+                nbr = 1;
+            }
+            else if (nbr < 0)
+            {
+                nbr = 0;
+            }
+
+            return nbr;
+        }
+
         private static void PrintValues(object obj)
         {
-            Debug.Print(temperature.ToString(TEMPERATURE_FORMAT) + ";" + gain.ToString(GAIN_FORMAT) + ";" + requestedTemperature.ToString(TEMPERATURE_FORMAT) + ";" + resistorDutyCycle.ToString());
+            Debug.Print(temperature.ToString(TEMPERATURE_FORMAT) + ";" + requestedTemperature.ToString(TEMPERATURE_FORMAT) + ";" + (resistorDutyCycle * requestedTemperature).ToString());
         }
     }
 }
